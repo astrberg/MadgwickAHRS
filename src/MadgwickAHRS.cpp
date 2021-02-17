@@ -45,6 +45,40 @@ Madgwick::Madgwick() {
 	anglesComputed = 0;
 }
 
+void Madgwick::begin(float ax, float ay, float az, float mx, float my, float mz) {
+	float recipNorm;
+	float ex, ey, ez, nx, ny, nz;
+
+	// Find East (= Acc X Mag) and North (= East X Acc)
+	ex = ay*mz - az*my;
+	ey = az*mx - ax*mz;
+	ez = ax*my - ay*mx;
+
+	nx = ey*az - ez*ay;
+	ny = ez*ax - ex*az;
+	nz = ex*ay - ey*ax;
+
+	// Normalize East and North vectors
+	recipNorm = invSqrt(ex * ex + ey * ey + ez * ez);
+	ex *= recipNorm;
+	ey *= recipNorm;
+	ez *= recipNorm;
+
+	recipNorm = invSqrt(nx * nx + ny * ny + nz * nz);
+	nx *= recipNorm;
+	ny *= recipNorm;
+	nz *= recipNorm;
+
+	// Initialize quaternion with current Pan angle, by definition of quaternion
+	// https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation#The_hypersphere_of_rotations
+	float angle = atan2(ex, nx);
+	q0 = cos(angle/2);
+	q1 = 0.0f;
+	q2 = 0.0f;
+	q3 = sin(angle/2);
+
+}
+
 void Madgwick::update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
 	float recipNorm;
 	float s0, s1, s2, s3;

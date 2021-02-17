@@ -39,12 +39,18 @@ private:
 // Function declarations
 public:
     Madgwick(void);
-    void begin(float sampleFrequency) { invSampleFreq = 1.0f / sampleFrequency; }
+
+    void setFreq(float sampleFrequency) {
+        invSampleFreq = 1.0f / sampleFrequency;
+    }
+    void setBeta(float _beta) {
+        beta = _beta;
+    }
+
+    void begin(float ax, float ay, float az, float mx, float my, float mz);
     void update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
     void updateIMU(float gx, float gy, float gz, float ax, float ay, float az);
-    //float getPitch(){return atan2f(2.0f * q2 * q3 - 2.0f * q0 * q1, 2.0f * q0 * q0 + 2.0f * q3 * q3 - 1.0f);};
-    //float getRoll(){return -1.0f * asinf(2.0f * q1 * q3 + 2.0f * q0 * q2);};
-    //float getYaw(){return atan2f(2.0f * q1 * q2 - 2.0f * q0 * q3, 2.0f * q0 * q0 + 2.0f * q1 * q1 - 1.0f);};
+
     float getRoll() {
         if (!anglesComputed) computeAngles();
         return roll * 57.29578f;
