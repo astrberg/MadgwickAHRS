@@ -23,6 +23,9 @@
 class Madgwick{
 private:
     static float invSqrt(float x);
+    static float dot(float ax, float ay, float az, float bx, float by, float bz);
+    static void cross(float ax, float ay, float az, float bx, float by, float bz, float &cx, float &cy, float &cz);
+    static void norm(float &ax, float &ay, float &az);
     float beta;				// algorithm gain
     float q0;
     float q1;
@@ -34,20 +37,21 @@ private:
     float yaw;
     char anglesComputed;
     void computeAngles();
+    void align(float ax, float ay, float az, float bx, float by, float bz);
+    void combine(float p0, float p1, float p2, float p3);
+    void rotate(float &ax, float &ay, float &az);
 
 //-------------------------------------------------------------------------------------------
 // Function declarations
 public:
     Madgwick(void);
-
-    void setFreq(float sampleFrequency) {
+    void begin(float sampleFrequency) { invSampleFreq = 1.0f / sampleFrequency; }
+    void begin(float sampleFrequency, float gain) {
         invSampleFreq = 1.0f / sampleFrequency;
+        beta = gain;
     }
-    void setBeta(float _beta) {
-        beta = _beta;
-    }
-
-    void begin(float ax, float ay, float az, float mx, float my, float mz);
+    void begin(float sampleFrequency, float gain, float pitch, float roll, float yaw);
+    void begin(float sampleFrequency, float gain, float ax, float ay, float az, float mx, float my, float mz);
     void update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
     void updateIMU(float gx, float gy, float gz, float ax, float ay, float az);
 
@@ -61,7 +65,7 @@ public:
     }
     float getYaw() {
         if (!anglesComputed) computeAngles();
-        return yaw * 57.29578f + 180.0f;
+        return yaw * 57.29578f;
     }
     float getRollRadians() {
         if (!anglesComputed) computeAngles();

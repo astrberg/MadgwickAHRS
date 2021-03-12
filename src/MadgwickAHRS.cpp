@@ -45,38 +45,50 @@ Madgwick::Madgwick() {
 	anglesComputed = 0;
 }
 
-void Madgwick::begin(float ax, float ay, float az, float mx, float my, float mz) {
-	float recipNorm;
-	float ex, ey, ez, nx, ny, nz;
+// Initialize quaternion from current orientation (angles)
+// See https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Source_code
+void Madgwick::begin(float sampleFrequency, float gain, float pitch, float roll, float yaw) {
+	begin(sampleFrequency, gain);
 
-	// Find East (= Acc X Mag) and North (= East X Acc)
-	ex = ay*mz - az*my;
-	ey = az*mx - ax*mz;
-	ez = ax*my - ay*mx;
+	float cy = cos(yaw * 0.5);
+	float sy = sin(yaw * 0.5);
+	float cp = cos(pitch * 0.5);
+	float sp = sin(pitch * 0.5);
+	float cr = cos(roll * 0.5);
+	float sr = sin(roll * 0.5);
 
-	nx = ey*az - ez*ay;
-	ny = ez*ax - ex*az;
-	nz = ex*ay - ey*ax;
+	q0 = cr * cp * cy + sr * sp * sy;
+	q1 = sr * cp * cy - cr * sp * sy;
+	q2 = cr * sp * cy + sr * cp * sy;
+	q3 = cr * cp * sy - sr * sp * cy;
 
-	// Normalize East and North vectors
-	recipNorm = invSqrt(ex * ex + ey * ey + ez * ez);
-	ex *= recipNorm;
-	ey *= recipNorm;
-	ez *= recipNorm;
+	anglesComputed = 0;
+}
 
-	recipNorm = invSqrt(nx * nx + ny * ny + nz * nz);
-	nx *= recipNorm;
-	ny *= recipNorm;
-	nz *= recipNorm;
+// Initialize quaternion from current orientation (sensors)
+// Finds North, then aligns North with (1, 0, 0) and Gravity with (0, 0, 1)
+void Madgwick::begin(float sampleFrequency, float gain, float ax, float ay, float az, float mx, float my, float mz) {
+	begin(sampleFrequency, gain);
 
-	// Initialize quaternion with current Pan angle, by definition of quaternion
-	// https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation#The_hypersphere_of_rotations
-	float angle = atan2(ex, nx);
-	q0 = cos(angle/2);
-	q1 = 0.0f;
-	q2 = 0.0f;
-	q3 = sin(angle/2);
+	// Reset quaternion, we are searching from scratch
+	q0 = 1; q1 = 0; q2 = 0; q3 = 0;
 
+	// Find North
+	float wx, wy, wz, nx, ny, nz;
+	cross(ax, ay, az, mx, my, mz, wx, wy, wz);
+	cross(wx, wy, wz, ax, ay, az, nx, ny, nz);
+
+	// Find rotation of (nx, ny, nz) to align with (1, 0, 0)
+	align(nx, ny, nz, 1, 0, 0);
+
+	// Rotate (ax, ay, az) same amount
+	rotate(ax, ay, az);
+
+	// Find next rotation of (ax, ay, az) to align with (0, 0, 1)
+	align(ax, ay, az, 0, 0, 1);
+
+	// Reset cache
+	anglesComputed = 0;
 }
 
 void Madgwick::update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
@@ -271,6 +283,65 @@ float Madgwick::invSqrt(float x) {
 	y = y * (1.5f - (halfx * y * y));
 	y = y * (1.5f - (halfx * y * y));
 	return y;
+}
+
+// Aligns two vectors (changes quaternion!)
+void Madgwick::align(float ax, float ay, float az, float bx, float by, float bz) {
+	float va, vx, vy, vz; // rotation angle and vector
+	cross(ax, ay, az, bx, by, bz, vx, vy, vz);
+	norm(ax, ay, az);
+	norm(bx, by, bz);
+	norm(vx, vy, vz);
+	va = acos(dot(ax, ay, az, bx, by, bz));
+	float a2 = cos(va/2);
+	float b2 = vx*sin(va/2);
+	float c2 = vy*sin(va/2);
+	float d2 = vz*sin(va/2);
+	combine(a2, b2, c2, d2);
+}
+
+// Combines current rotation with new (changes quaternion!)
+// See https://en.wikipedia.org/wiki/Euler–Rodrigues_formula#Composition_of_rotations
+void Madgwick::combine(float a2, float b2, float c2, float d2) {
+	float a1 = q0;
+	float b1 = q1;
+	float c1 = q2;
+	float d1 = q3;
+	q0 = a1*a2 - b1*b2 - c1*c2 - d1*d2;
+	q1 = a1*b2 + b1*a2 - c1*d2 + d1*c2;
+	q2 = a1*c2 + c1*a2 - d1*b2 + b1*d2;
+	q3 = a1*d2 + d1*a2 - b1*c2 + c1*b2;
+}
+
+// Applies current rotation to given vector
+// See https://en.wikipedia.org/wiki/Euler–Rodrigues_formula#Vector_formulation
+void Madgwick::rotate(float &ax, float &ay, float &az) {
+	float r1x, r1y, r1z, r2x, r2y, r2z;
+	cross(q1, q2, q3, ax, ay, az, r1x, r1y, r1z);
+	cross(q1, q2, q3, r1x, r1y, r1z, r2x, r2y, r2z);
+	ax = ax + 2*q0*r1x + 2*r2x;
+	ay = ay + 2*q0*r1y + 2*r2y;
+	az = az + 2*q0*r1z + 2*r2z;
+}
+
+// Cross product of two vectors
+void Madgwick::cross(float ax, float ay, float az, float bx, float by, float bz, float &cx, float &cy, float &cz) {
+  cx = ay*bz - az*by;
+  cy = az*bx - ax*bz;
+  cz = ax*by - ay*bx;
+}
+
+// Dot product of two vectors
+float Madgwick::dot(float ax, float ay, float az, float bx, float by, float bz) {
+  return ax*bx + ay*by + az*bz;
+}
+
+// Normalization of a vector
+void Madgwick::norm(float &ax, float &ay, float &az) {
+  float recipNorm = invSqrt(dot(ax, ay, az, ax, ay, az));
+  ax *= recipNorm;
+	ay *= recipNorm;
+	az *= recipNorm;
 }
 
 //-------------------------------------------------------------------------------------------
