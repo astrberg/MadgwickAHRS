@@ -2,6 +2,13 @@
 
 This library wraps the official implementation of MadgwickAHRS algorithm to get orientation of an object based on accelerometer and gyroscope readings
 
+---
+Changes compared to upsteam
+
+- Add https://github.com/ysoldak/MadgwickAHRS/tree/set-methods[ysoldak] quaternion initialisation
+
+---
+
 == License ==
 
 Copyright (c) Arduino LLC. All right reserved.
