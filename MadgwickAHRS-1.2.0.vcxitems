@@ -25,5 +25,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory).git" />
+    <None Include="$(MSBuildThisFileDirectory)README.adoc" />
   </ItemGroup>
 </Project>
