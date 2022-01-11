@@ -25,9 +25,8 @@
 //-------------------------------------------------------------------------------------------
 // Definitions
 
-#define sampleFreqDef   512.0f          // sample frequency in Hz
-#define betaDef         0.1f            // 2 * proportional gain
-
+#define sampleFreqDef 512.0f // sample frequency in Hz
+#define betaDef 0.1f		 // 2 * proportional gain
 
 //============================================================================================
 // Functions
@@ -35,7 +34,8 @@
 //-------------------------------------------------------------------------------------------
 // AHRS algorithm update
 
-Madgwick::Madgwick() {
+Madgwick::Madgwick()
+{
 	beta = betaDef;
 	q0 = 1.0f;
 	q1 = 0.0f;
@@ -47,7 +47,8 @@ Madgwick::Madgwick() {
 
 // Initialize quaternion from current orientation (angles)
 // See https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Source_code
-void Madgwick::begin(float sampleFrequency, float gain, float pitch, float roll, float yaw) {
+void Madgwick::begin(float sampleFrequency, float gain, float pitch, float roll, float yaw)
+{
 	begin(sampleFrequency, gain);
 
 	float cy = cos(yaw * 0.5);
@@ -67,11 +68,15 @@ void Madgwick::begin(float sampleFrequency, float gain, float pitch, float roll,
 
 // Initialize quaternion from current orientation (sensors)
 // Finds North, then aligns North with (1, 0, 0) and Gravity with (0, 0, 1)
-void Madgwick::begin(float sampleFrequency, float gain, float ax, float ay, float az, float mx, float my, float mz) {
+void Madgwick::begin(float sampleFrequency, float gain, float ax, float ay, float az, float mx, float my, float mz)
+{
 	begin(sampleFrequency, gain);
 
 	// Reset quaternion, we are searching from scratch
-	q0 = 1; q1 = 0; q2 = 0; q3 = 0;
+	q0 = 1;
+	q1 = 0;
+	q2 = 0;
+	q3 = 0;
 
 	// Find North
 	float wx, wy, wz, nx, ny, nz;
@@ -91,7 +96,8 @@ void Madgwick::begin(float sampleFrequency, float gain, float ax, float ay, floa
 	anglesComputed = 0;
 }
 
-void Madgwick::update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
+void Madgwick::update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz)
+{
 	float recipNorm;
 	float s0, s1, s2, s3;
 	float qDot1, qDot2, qDot3, qDot4;
@@ -99,7 +105,8 @@ void Madgwick::update(float gx, float gy, float gz, float ax, float ay, float az
 	float _2q0mx, _2q0my, _2q0mz, _2q1mx, _2bx, _2bz, _4bx, _4bz, _2q0, _2q1, _2q2, _2q3, _2q0q2, _2q2q3, q0q0, q0q1, q0q2, q0q3, q1q1, q1q2, q1q3, q2q2, q2q3, q3q3;
 
 	// Use IMU algorithm if magnetometer measurement invalid (avoids NaN in magnetometer normalisation)
-	if((mx == 0.0f) && (my == 0.0f) && (mz == 0.0f)) {
+	if ((mx == 0.0f) && (my == 0.0f) && (mz == 0.0f))
+	{
 		updateIMU(gx, gy, gz, ax, ay, az);
 		return;
 	}
@@ -116,7 +123,8 @@ void Madgwick::update(float gx, float gy, float gz, float ax, float ay, float az
 	qDot4 = 0.5f * (q0 * gz + q1 * gy - q2 * gx);
 
 	// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
-	if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
+	if (!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f)))
+	{
 
 		// Normalise accelerometer measurement
 		recipNorm = invSqrt(ax * ax + ay * ay + az * az);
@@ -196,11 +204,12 @@ void Madgwick::update(float gx, float gy, float gz, float ax, float ay, float az
 //-------------------------------------------------------------------------------------------
 // IMU algorithm update
 
-void Madgwick::updateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
+void Madgwick::updateIMU(float gx, float gy, float gz, float ax, float ay, float az)
+{
 	float recipNorm;
 	float s0, s1, s2, s3;
 	float qDot1, qDot2, qDot3, qDot4;
-	float _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 ,_8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
+	float _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2, _8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
 
 	// Convert gyroscope degrees/sec to radians/sec
 	gx *= 0.0174533f;
@@ -214,7 +223,8 @@ void Madgwick::updateIMU(float gx, float gy, float gz, float ax, float ay, float
 	qDot4 = 0.5f * (q0 * gz + q1 * gy - q2 * gx);
 
 	// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
-	if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
+	if (!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f)))
+	{
 
 		// Normalise accelerometer measurement
 		recipNorm = invSqrt(ax * ax + ay * ay + az * az);
@@ -274,72 +284,79 @@ void Madgwick::updateIMU(float gx, float gy, float gz, float ax, float ay, float
 // Fast inverse square-root
 // See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
 
-float Madgwick::invSqrt(float x) {
+float Madgwick::invSqrt(float x)
+{
 	float halfx = 0.5f * x;
 	float y = x;
-	long i = *(long*)&y;
-	i = 0x5f3759df - (i>>1);
-	y = *(float*)&i;
+	long i = *(long *)&y;
+	i = 0x5f3759df - (i >> 1);
+	y = *(float *)&i;
 	y = y * (1.5f - (halfx * y * y));
 	y = y * (1.5f - (halfx * y * y));
 	return y;
 }
 
 // Aligns two vectors (changes quaternion!)
-void Madgwick::align(float ax, float ay, float az, float bx, float by, float bz) {
+void Madgwick::align(float ax, float ay, float az, float bx, float by, float bz)
+{
 	float va, vx, vy, vz; // rotation angle and vector
 	cross(ax, ay, az, bx, by, bz, vx, vy, vz);
 	norm(ax, ay, az);
 	norm(bx, by, bz);
 	norm(vx, vy, vz);
 	va = acos(dot(ax, ay, az, bx, by, bz));
-	float a2 = cos(va/2);
-	float b2 = vx*sin(va/2);
-	float c2 = vy*sin(va/2);
-	float d2 = vz*sin(va/2);
+	float a2 = cos(va / 2);
+	float b2 = vx * sin(va / 2);
+	float c2 = vy * sin(va / 2);
+	float d2 = vz * sin(va / 2);
 	combine(a2, b2, c2, d2);
 }
 
 // Combines current rotation with new (changes quaternion!)
 // See https://en.wikipedia.org/wiki/Euler–Rodrigues_formula#Composition_of_rotations
-void Madgwick::combine(float a2, float b2, float c2, float d2) {
+void Madgwick::combine(float a2, float b2, float c2, float d2)
+{
 	float a1 = q0;
 	float b1 = q1;
 	float c1 = q2;
 	float d1 = q3;
-	q0 = a1*a2 - b1*b2 - c1*c2 - d1*d2;
-	q1 = a1*b2 + b1*a2 - c1*d2 + d1*c2;
-	q2 = a1*c2 + c1*a2 - d1*b2 + b1*d2;
-	q3 = a1*d2 + d1*a2 - b1*c2 + c1*b2;
+	q0 = a1 * a2 - b1 * b2 - c1 * c2 - d1 * d2;
+	q1 = a1 * b2 + b1 * a2 - c1 * d2 + d1 * c2;
+	q2 = a1 * c2 + c1 * a2 - d1 * b2 + b1 * d2;
+	q3 = a1 * d2 + d1 * a2 - b1 * c2 + c1 * b2;
 }
 
 // Applies current rotation to given vector
 // See https://en.wikipedia.org/wiki/Euler–Rodrigues_formula#Vector_formulation
-void Madgwick::rotate(float &ax, float &ay, float &az) {
+void Madgwick::rotate(float &ax, float &ay, float &az)
+{
 	float r1x, r1y, r1z, r2x, r2y, r2z;
 	cross(q1, q2, q3, ax, ay, az, r1x, r1y, r1z);
 	cross(q1, q2, q3, r1x, r1y, r1z, r2x, r2y, r2z);
-	ax = ax + 2*q0*r1x + 2*r2x;
-	ay = ay + 2*q0*r1y + 2*r2y;
-	az = az + 2*q0*r1z + 2*r2z;
+	ax = ax + 2 * q0 * r1x + 2 * r2x;
+	ay = ay + 2 * q0 * r1y + 2 * r2y;
+	az = az + 2 * q0 * r1z + 2 * r2z;
 }
 
 // Cross product of two vectors
-void Madgwick::cross(float ax, float ay, float az, float bx, float by, float bz, float &cx, float &cy, float &cz) {
-  cx = ay*bz - az*by;
-  cy = az*bx - ax*bz;
-  cz = ax*by - ay*bx;
+void Madgwick::cross(float ax, float ay, float az, float bx, float by, float bz, float &cx, float &cy, float &cz)
+{
+	cx = ay * bz - az * by;
+	cy = az * bx - ax * bz;
+	cz = ax * by - ay * bx;
 }
 
 // Dot product of two vectors
-float Madgwick::dot(float ax, float ay, float az, float bx, float by, float bz) {
-  return ax*bx + ay*by + az*bz;
+float Madgwick::dot(float ax, float ay, float az, float bx, float by, float bz)
+{
+	return ax * bx + ay * by + az * bz;
 }
 
 // Normalization of a vector
-void Madgwick::norm(float &ax, float &ay, float &az) {
-  float recipNorm = invSqrt(dot(ax, ay, az, ax, ay, az));
-  ax *= recipNorm;
+void Madgwick::norm(float &ax, float &ay, float &az)
+{
+	float recipNorm = invSqrt(dot(ax, ay, az, ax, ay, az));
+	ax *= recipNorm;
 	ay *= recipNorm;
 	az *= recipNorm;
 }
@@ -348,9 +365,8 @@ void Madgwick::norm(float &ax, float &ay, float &az) {
 
 void Madgwick::computeAngles()
 {
-	roll = atan2f(q0*q1 + q2*q3, 0.5f - q1*q1 - q2*q2);
-	pitch = asinf(-2.0f * (q1*q3 - q0*q2));
-	yaw = atan2f(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3);
+	roll = atan2f(q0 * q1 + q2 * q3, 0.5f - q1 * q1 - q2 * q2);
+	pitch = asinf(-2.0f * (q1 * q3 - q0 * q2));
+	yaw = atan2f(q1 * q2 + q0 * q3, 0.5f - q2 * q2 - q3 * q3);
 	anglesComputed = 1;
 }
-
