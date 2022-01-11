@@ -73,7 +73,7 @@ public:
     {
         if (!anglesComputed)
             computeAngles();
-        return yaw * 57.29578f;
+        return yaw * 57.29578f + 180.0f; // TODO: test
     }
     float getRollRadians()
     {
